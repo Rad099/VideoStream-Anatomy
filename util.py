@@ -65,6 +65,42 @@ def conv_to_rgb(input):
         cv2.destroyAllWindows()
         
         
+        
+def rgb_frequency(input):
+    cap = cv2.VideoCapture(input)
+    
+    
+    frames = []
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        frames.append(frame)
+        
+    #rgb_frames = [cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) for frame in frames]
+    
+    grey_scale = [cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) for frame in frames]
+    
+    
+    fft = [np.fft.fft2(grey) for grey in grey_scale]
+    
+    mag_spectrum = [np.log(np.abs(np.fft.fftshift(fft_frame)) + 1) for fft_frame in fft]
+    
+    for mag in mag_spectrum:
+        # Display magnitude spectrum
+        plt.imshow(mag, cmap='gray')
+        plt.title('FFT of Grayscale Frame'), plt.xticks([]), plt.yticks([])
+        plt.show()
+        
+        # Wait for a key press.
+        #cv2.waitKey(0)
+        #cap.release()
+
+        # Destroy the windows.
+        cv2.destroyAllWindows()
+        
+        
+
 
 
 def composite_signal():

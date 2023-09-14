@@ -23,10 +23,10 @@ def main():
 
     
     # Original RGB components
-    util.conv_to_rgb(video)
+    #util.conv_to_rgb(video)
 
-    
-
+    # frequency of RGB frames
+    util.rgb_frequency(video)
     
     
     
