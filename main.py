@@ -5,27 +5,46 @@ main.py
    
    
 The main file has the main 4 steps of the project, and at each step, presents the spatial and frequency data
+for the component specified.
    
    
 '''
-
+import cv2
+import numpy as np
+from matplotlib import pyplot as plt
 import util
+import time
 
 
-# Original RGB components
+video = "IMG_4148.mp4"
+
+def main():
+    print(f'Welcome! We will be going through each of the steps of this computer project.')
+
+    
+    # Original RGB components
+    util.conv_to_rgb(video)
+
+    
+
+    
+    
+    
+    
 
 
-
-# Orgiinal YIQ components
-
+    # Orgiinal YIQ components
 
 
-# Composite signal
+    # Composite signal
 
 
-
-# Recovered YIQ
-
+    # Recovered YIQ
 
 
-# Recovered RGB
+    # Recovered RGB
+
+
+if __name__ == "__main__":
+    main()
+    
