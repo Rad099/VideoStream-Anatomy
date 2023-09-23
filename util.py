@@ -25,10 +25,34 @@ def get_video(input):
     
 
 def conv_to_yiq(input):
-    pass
+    cap = get_video(input)
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    num_frames = int(fps * 3)
+    
+    ret, frame = cap.read()
+  
+    # Convert the image to YIQ format.
+    yiq_image = cv2.cvtColor(frame, cv2.COLOR_RGB2YCrCb)
+    
+    y, i, q = cv2.split(yiq_image)
+    
+
+    cv2.imshow("Y", y)
+    cv2.imshow("I", i)
+    cv2.imshow("Q", q)
+    
+     # Wait for a key press.
+    cv2.waitKey(0)
+
+        # Destroy the windows.
+    cv2.destroyAllWindows()
+    
+    
+    # Return the YIQ image.
+    return yiq_image
 
 def conv_to_rgb(input):
-    cap = cv2.VideoCapture(input)
+    cap = get_video(input)
     fps = cap.get(cv2.CAP_PROP_FPS)
     num_frames = int(fps * 3)
     
@@ -76,8 +100,6 @@ def rgb_frequency(input):
         if not ret:
             break
         frames.append(frame)
-        
-    #rgb_frames = [cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) for frame in frames]
     
     grey_scale = [cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) for frame in frames]
     
@@ -103,8 +125,42 @@ def rgb_frequency(input):
 
 
 
-def composite_signal():
-    pass
+def composite_signal(input):
+    frame = conv_to_yiq(input)
+    
+     # Split the frame into its Y, I, and Q components.
+    y, i, q = cv2.split(frame)
+
+    # Apply a low-pass filter to the Y component. 4.2Mhz
+    kernel_size = int(np.ceil(4 / 4200000))
+    kernel = cv2.getGaussianKernel(kernel_size, kernel_size / 4)
+    y = cv2.filter2D(y, -1, kernel)
+
+    # Apply a low-pass filter to the I component. 1.5Mhz
+    kernel_size = int(np.ceil(4 / 1500000))
+    kernel = cv2.getGaussianKernel(kernel_size, kernel_size / 4)
+    i = cv2.filter2D(i, -1, kernel)
+
+    # Apply a low-pass filter to the Q component. 0.5 Mhz
+    kernel_size = int(np.ceil(4 / 500000))
+    kernel = cv2.getGaussianKernel(kernel_size, kernel_size / 4)
+    q = cv2.filter2D(q, -1, kernel)
+    # Combine the Y, I, and Q components back into a single frame.
+    c_frame = cv2.merge((y, i, q))
+    
+    cv2.imshow("c", y)
+    
+    
+    # Wait for a key press.
+    cv2.waitKey(0)
+
+    # Destroy the windows.
+    cv2.destroyAllWindows()
+    
+    return frame
+    
+    
+
 
 
 

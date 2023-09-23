@@ -26,7 +26,11 @@ def main():
     #util.conv_to_rgb(video)
 
     # frequency of RGB frames
-    util.rgb_frequency(video)
+    #util.rgb_frequency(video)
+    
+    #yiq = util.conv_to_yiq(video)
+    util.composite_signal(video)
+    
     
     
     
