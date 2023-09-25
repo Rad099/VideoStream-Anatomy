@@ -29,8 +29,10 @@ def main():
     #util.rgb_frequency(video)
     
     #yiq = util.conv_to_yiq(video)
-    util.composite_signal(video)
+    #util.composite_signal(video)
+    #util.yiq_frequency(video)
     
+    util.rgb(video)
     
     
     
@@ -41,6 +43,7 @@ def main():
 
 
     # Composite signal
+    
 
 
     # Recovered YIQ
