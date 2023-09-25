@@ -23,29 +23,16 @@ def main():
 
     
     # Original RGB components
-    #util.conv_to_rgb(video)
-
-    # frequency of RGB frames
-    #util.rgb_frequency(video)
-    
-    #yiq = util.conv_to_yiq(video)
-    #util.composite_signal(video)
-    #util.yiq_frequency(video)
-    
-    util.rgb(video)
-    
-    
-    
-    
-
+    #util.rgb(video)
 
     # Orgiinal YIQ components
+    #util.yiq(video)
 
 
     # Composite signal
+    util.composite_signal(video)
     
-
-
+    
     # Recovered YIQ
 
 
