@@ -17,6 +17,8 @@ import math
 from matplotlib import pyplot as plt
 import time
 
+plt.rcParams['agg.path.chunksize'] = 1000
+
 
 rgb_frames = []
 yiq_frames = []
@@ -357,17 +359,13 @@ def composite_signal(input):
       
         composite_image = process_yiq(y, i, q)
     
-        # Plot the result in spatial domain
-        plt.figure(0)
-        plt.plot(np.abs(composite_image))
-        plt.title('Composite in spatial domain')
-        
-        plt.show()
-        
+        #composite_spatial(composite_image)
         # Wait for a key press.
-        key = cv2.waitKey(0)
-        cv2.destroyAllWindows()
+       
+        
+        composite_freq(composite_image)
 
+        key = cv2.waitKey(0)
         if key == ord('0'):
             # Destroy all figures
             plt.close('all')
@@ -381,6 +379,24 @@ def composite_signal(input):
     cv2.destroyAllWindows()
     
     
+    
+def composite_spatial(input):
+    # Plot the result in spatial domain
+    plt.figure(0)
+    plt.plot(np.abs(input))
+    plt.title('Composite in spatial domain')
+        
+    plt.show()
+        
+def composite_freq(input):
+    
+    db = 20 * np.log10(np.abs(input))
+    # Plot the result in freq domain
+    plt.figure(0)
+    plt.semilogy(db)
+    plt.title('Composite in frequency domain')
+        
+    plt.show()
     
 
 
