@@ -34,6 +34,8 @@ def main():
     
     
     # Recovered YIQ
+    util.recov_yiq()
+    
 
 
     # Recovered RGB

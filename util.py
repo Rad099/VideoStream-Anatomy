@@ -20,11 +20,19 @@ import time
 plt.rcParams['agg.path.chunksize'] = 1000
 
 
-rgb_frames = []
-yiq_frames = []
 composite_frames = []
 rec_yiq_frames = []
 rec_rgb_frames = []
+
+
+##### GLOBAL VARIABLES #####
+max_Frequency = 5450000 # as shown in slides, not including audio signal
+Y_carrier_Frequency = 1250000
+I_carrier_Frequency = 3830000
+Q_carrier_Frequency = 4830000
+I_beginning_Frequency = 3390000
+Q_beginning_Frequency = 4390000
+
 
 # calls opencv video capture
 def get_video(input):
@@ -36,6 +44,7 @@ def conv_to_yiq(input):
     yiq_image = cv2.cvtColor(input, cv2.COLOR_RGB2YCrCb)
 
     y, i, q = cv2.split(yiq_image)
+
     
     # Return the YIQ image.
     return y, i, q
@@ -252,9 +261,8 @@ def rgb(input):
         elif key == ord('q'):
             break
 
-    # Release the video capture object
     cap.release()
-    # Destroy any remaining OpenCV windows
+ 
     cv2.destroyAllWindows()
 
 
@@ -288,7 +296,7 @@ def rgb_frequency(r, g, b):
     G_frequency_domain = np.real(f_g)
     B_frequency_domain = np.real(f_b)
 
-    # Take the first half (due to symmetry)
+    # Take the first half
     R_frequency_domain = R_frequency_domain[:len(R_frequency_domain)//2]
     G_frequency_domain = G_frequency_domain[:len(G_frequency_domain)//2]
     B_frequency_domain = B_frequency_domain[:len(B_frequency_domain)//2]
@@ -298,21 +306,6 @@ def rgb_frequency(r, g, b):
 
 
 def process_yiq(y,i,q):
-    max_Frequency = 5450000 # as shown in slides, not including audio signal
-    Y_carrier_Frequency = 1250000
-    I_carrier_Frequency = 3830000
-    Q_carrier_Frequency = 4830000
-    I_beginning_Frequency = 3390000
-    Q_beginning_Frequency = 4390000
-    
-    '''
-    # Reshape Y, I, and Q arrays
-    Y = y.reshape(-1, 1)
-    I = i.reshape(-1, 1)
-    Q = q.reshape(-1, 1)
-    
-    '''
-    
     Y = y.flatten()
     I = i.flatten()
     Q = q.flatten()
@@ -348,9 +341,23 @@ def composite_signal(input):
     fps = cap.get(cv2.CAP_PROP_FPS)
     num_frames = int(fps * 3)
     
-    for i in range(num_frames):
+    for j in range(num_frames):
         ret, frame = cap.read()
+        
+        if not ret:
+            break
+        
+        y, i, q = conv_to_yiq(frame)
+        composite_image = process_yiq(y, i, q)
+        composite_frames.append(composite_image)
+        if j == 5:
+            return
+        
     
+    #user = input("if you want to see the spatial or frequency domains of the composite signals, press c. To continue, press q")
+    #if user == 'q':
+    
+        '''
         # Check if the frame was read successfully.
         if not ret:
             break
@@ -359,13 +366,15 @@ def composite_signal(input):
       
         composite_image = process_yiq(y, i, q)
     
-        #composite_spatial(composite_image)
+        composite_spatial(composite_image)
         # Wait for a key press.
+        cv2.waitKey(1)
+        cv2.destroyAllWindows()
        
         
         composite_freq(composite_image)
 
-        key = cv2.waitKey(0)
+        key = cv2.waitKey(1)
         if key == ord('0'):
             # Destroy all figures
             plt.close('all')
@@ -377,6 +386,8 @@ def composite_signal(input):
     cap.release()
     # Destroy the windows.
     cv2.destroyAllWindows()
+    
+    '''
     
     
     
@@ -398,8 +409,86 @@ def composite_freq(input):
         
     plt.show()
     
+def display_recov_yiq(y, i, q):
+    pass
 
+def display_recov_yiq_freq(y, i, q):
+   
+    db_y = 20 * np.log10(np.abs(y))
+    db_i = 20 * np.log10(np.abs(i))
+    db_q = 20 * np.log10(np.abs(q))
+    
+    plt.figure(0)
+    plt.semilogy(db_y)
+    plt.title("Recovered Y in frequency domain")
+    
+    plt.figure(1)
+    plt.semilogy(db_i)
+    plt.title("Recovered I in frequency domain")
+    
+    plt.figure(2)
+    plt.semilogy(db_q)
+    plt.title("Recovered Q in frequency domain")
+    
+    plt.show()
+    
+    
+    
+def spatial_recov_yiq(y, i, q):
+    y_recov = np.fft.ifft(y)
+    i_recov = np.fft.ifft(i)
+    q_recov = np.fft.ifft(q)
+    
+    plt.figure(0)
+    plt.plot(y_recov)
+    plt.title("Recovered Y in spatial domain")
+    plt.ylim(0, 500)
+    plt.xlim(0, 5000)
+    
+    plt.figure(1)
+    plt.plot(i_recov)
+    plt.title("Recovered I in spatial domain")
+    
+    plt.figure(2)
+    plt.plot(q_recov)
+    plt.title("Recovered Q in spatial domain")
+    
+    plt.show()
+    
+def recov_yiq_img(y, i, q):
+    y_recov = np.fft.ifft(y)
+    
+    y_recov = np.reshape(y_recov, 720*576)
+    
+    # Normalize the values (optional, depending on your specific requirements)
+    y_recov = np.abs(y_recov)
+    y_recov = y_recov / np.max(y_recov) * 255
+    
+    y_recov = y_recov.astype(np.uint8)
+    
+    
+    
+    cv2.imshow("y", y_recov)
+    
+    
 
+def recov_yiq():
+    
+    for comp in composite_frames:
+        y_recov = np.roll(comp[1:I_beginning_Frequency-1], -Y_carrier_Frequency)
+        i_recov = np.roll(np.roll(comp[I_beginning_Frequency:Q_beginning_Frequency-1],  -I_beginning_Frequency), -I_carrier_Frequency)
+        q_recov = np.roll(np.roll(comp[Q_beginning_Frequency:max_Frequency],  -(Q_beginning_Frequency-1)), -Q_carrier_Frequency)
+        
+       
+        display_recov_yiq_freq(y_recov, i_recov, q_recov)
+        #spatial_recov_yiq(y_recov, i_recov, q_recov)
+        #recov_yiq_img(y_recov, i_recov, q_recov)
+        cv2.waitKey(1)
+        cv2.destroyAllWindows()
+    
+    
+    
+    
 
 
 
