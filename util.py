@@ -26,12 +26,12 @@ rec_rgb_frames = []
 
 
 ##### GLOBAL VARIABLES #####
-max_Frequency = 5450000 # as shown in slides, not including audio signal
+max_Frequency = 5450000 # as shown in slides, not including audio signal. NTSC standard frequency ranges
 Y_carrier_Frequency = 1250000
-I_carrier_Frequency = 3830000
+I_carrier_Frequency = 3875000
 Q_carrier_Frequency = 4830000
-I_beginning_Frequency = 3390000
-Q_beginning_Frequency = 4390000
+I_beginning_Frequency = 3398001
+Q_beginning_Frequency = 4352001
 
 
 # calls opencv video capture
@@ -76,7 +76,7 @@ def display_yiq(y, i, q):
         plt.show(block=False)
         
 def display_yiq_freq(y, i, q):
-        mag_y, mag_i, mag_q = rgb_frequency(y, i, q)
+        mag_y, mag_i, mag_q = yiq_frequency(y, i, q)
         
         
         # convert to dB for better results
@@ -142,7 +142,7 @@ def yiq(input):
     
     for i in range(num_frames):
         ret, frame = cap.read()
-    
+
         # Check if the frame was read successfully.
         if not ret:
             break
@@ -317,15 +317,18 @@ def process_yiq(y,i,q):
 
     # Circular shift Y signal
     Ysignal = np.roll(f_y, Y_carrier_Frequency)
+    
 
     # Zero out specified frequencies in Y, I, and Q
     Ysignal[I_beginning_Frequency:max_Frequency] = 0
     f_i[:Q_beginning_Frequency] = 0
     f_q[:Q_beginning_Frequency] = 0
-
+    
     # Circular shift I and Q signals
     f_i = np.roll(f_i, I_carrier_Frequency)
     f_q = np.roll(f_q, Q_carrier_Frequency)
+
+
 
     # Combine I and Q signals
     IandQ = f_i + f_q
@@ -352,6 +355,7 @@ def composite_signal(input):
         composite_frames.append(composite_image)
         if j == 5:
             return
+
         
     
     #user = input("if you want to see the spatial or frequency domains of the composite signals, press c. To continue, press q")
@@ -401,10 +405,10 @@ def composite_spatial(input):
         
 def composite_freq(input):
     
-    db = 20 * np.log10(np.abs(input))
+    #db = 20 * np.log10(np.abs(input))
     # Plot the result in freq domain
     plt.figure(0)
-    plt.semilogy(db)
+    plt.semilogy(np.real(input)[::10])
     plt.title('Composite in frequency domain')
         
     plt.show()
@@ -414,20 +418,20 @@ def display_recov_yiq(y, i, q):
 
 def display_recov_yiq_freq(y, i, q):
    
-    db_y = 20 * np.log10(np.abs(y))
-    db_i = 20 * np.log10(np.abs(i))
-    db_q = 20 * np.log10(np.abs(q))
+    db_y = 20 * np.log10(np.real(y))
+    db_i = 20 * np.log10(np.real(i))
+    db_q = 20 * np.log10(np.real(q))
     
     plt.figure(0)
-    plt.semilogy(db_y)
+    plt.semilogy(db_y[::10])
     plt.title("Recovered Y in frequency domain")
     
     plt.figure(1)
-    plt.semilogy(db_i)
+    plt.semilogy(db_i[::10])
     plt.title("Recovered I in frequency domain")
     
     plt.figure(2)
-    plt.semilogy(db_q)
+    plt.semilogy(db_q[::10])
     plt.title("Recovered Q in frequency domain")
     
     plt.show()
@@ -456,34 +460,52 @@ def spatial_recov_yiq(y, i, q):
     plt.show()
     
 def recov_yiq_img(y, i, q):
-    y_recov = np.fft.ifft(y)
+   # Assuming 'freq_signal' is your 1D frequency domain signal
+
+    # Step 1: Convert the 1D frequency domain signal to spatial domain
+    y_image = np.fft.ifft(y).real
+
+    y_image = np.reshape(y_image[:1080*1920], (1080, 1920))
+
+    # Step 4: Display the image using cv2.imshow()
+    cv2.imshow('Y Component Image', y_image)
     
-    y_recov = np.reshape(y_recov, 720*576)
+    # Step 1: Convert the 1D frequency domain signal to spatial domain
+    i_image = np.fft.ifft(i).real
+
+    i_image = np.reshape(i_image[:1080*1920], (1080, 1920))
+
+    # Step 4: Display the image using cv2.imshow()
+    cv2.imshow('I Component Image', i_image)
     
-    # Normalize the values (optional, depending on your specific requirements)
-    y_recov = np.abs(y_recov)
-    y_recov = y_recov / np.max(y_recov) * 255
-    
-    y_recov = y_recov.astype(np.uint8)
-    
-    
-    
-    cv2.imshow("y", y_recov)
-    
+     # Step 1: Convert the 1D frequency domain signal to spatial domain
+    q_image = np.fft.ifft(q).real
+
+    q_image = np.reshape(q_image[:1080*1920], (1080, 1920))
+
+    # Step 4: Display the image using cv2.imshow()
+    cv2.imshow('Q Component Image', q_image)
+
     
 
+    
 def recov_yiq():
     
     for comp in composite_frames:
-        y_recov = np.roll(comp[1:I_beginning_Frequency-1], -Y_carrier_Frequency)
-        i_recov = np.roll(np.roll(comp[I_beginning_Frequency:Q_beginning_Frequency-1],  -I_beginning_Frequency), -I_carrier_Frequency)
-        q_recov = np.roll(np.roll(comp[Q_beginning_Frequency:max_Frequency],  -(Q_beginning_Frequency-1)), -Q_carrier_Frequency)
         
-       
-        display_recov_yiq_freq(y_recov, i_recov, q_recov)
+        # for y recov
+        y_recov = np.roll(np.pad(comp[1:I_beginning_Frequency-1], (0, max_Frequency - I_beginning_Frequency), 'constant', constant_values=0), -Y_carrier_Frequency)
+        #i_recov = np.roll(np.roll(comp[I_beginning_Frequency:Q_beginning_Frequency-1],  -I_beginning_Frequency), -I_carrier_Frequency)
+        i_recov = np.roll(np.pad(np.pad(comp[I_beginning_Frequency:Q_beginning_Frequency-1], (I_beginning_Frequency, 0), 'constant', constant_values=0), (0, max_Frequency-Q_beginning_Frequency), 'constant', constant_values=0), -I_carrier_Frequency)
+        q_recov = np.roll(np.pad(comp[Q_beginning_Frequency:max_Frequency], (Q_beginning_Frequency-1, 0), 'constant', constant_values=0), -Q_carrier_Frequency)
+        
+        #y_recov = demodulate(comp, 'y')
+        #i_recov = demodulate(comp, 'i')
+        #q_recov = demodulate(comp, 'q')
+        #display_recov_yiq_freq(y_recov, i_recov, q_recov)
         #spatial_recov_yiq(y_recov, i_recov, q_recov)
-        #recov_yiq_img(y_recov, i_recov, q_recov)
-        cv2.waitKey(1)
+        recov_yiq_img(y_recov, i_recov, q_recov)
+        cv2.waitKey(0)
         cv2.destroyAllWindows()
     
     
