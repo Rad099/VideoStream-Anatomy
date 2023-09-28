@@ -41,16 +41,26 @@ def get_video(input):
      
 def conv_to_yiq(input):
     
-    #yiq_image = cv2.cvtColor(input, cv2.COLOR_RGB2YCrCb)
     r, g, b = cv2.split(input)
-    y = 0.299*r + 0.587*g + 0.114*b
-    i = 0.596*r - 0.275*g - 0.321 *b
-    q = 0.212*r - 0.523*g - 0.311*b
-    
 
-    #y, i, q = cv2.split(yiq_image)
+    # Normalize to the range [0, 1]
+    #r = r / 255.0
+    #g = g / 255.0
+    #b = b / 255.0
 
+    # Convert to float64 for precision
+    #r = r.astype(np.float64)
+    #g = g.astype(np.float64)
+    #b = b.astype(np.float64)
+
+    # RGB to YIQ conversion
+    #y = 0.299*r + 0.587*g + 0.114*b
+    #i = 0.596*r - 0.275*g - 0.321*b
+    #q = 0.212*r - 0.523*g - 0.311*b
     
+    yiq = cv2.cvtColor(input, cv2.COLOR_BGR2YCrCb)
+    y, i, q = cv2.split(yiq)
+        
     # Return the YIQ image.
     return y, i, q
 
@@ -203,7 +213,7 @@ def display_rgb_freq(r, g, b):
         plt.title('B original in Frequency Domain')
 
         
-        plt.show(block=False)
+        plt.show()
         
 def display_rgb(r, g, b):
     
@@ -362,7 +372,7 @@ def composite_signal(input):
         y, i, q = conv_to_yiq(frame)
         composite_image = process_yiq(y, i, q)
         composite_frames.append(composite_image)
-        if j == 5:
+        if j == 2:
             return
 
         
@@ -471,29 +481,28 @@ def spatial_recov_yiq(y, i, q):
     
     
 def demodulate(comp):
-    # Extract Y part of the composite signal
+    # Extract Y 
     YsignalRecovered = comp[1:I_beginning_Frequency-1]
 
-    # Pad the array with zeros
+    # Pad the array 
     YsignalRecovered = np.pad(YsignalRecovered, (0, max_Frequency-I_beginning_Frequency), mode='constant', constant_values=0)
 
     # Circular shift the signal
     YsignalRecovered = np.roll(YsignalRecovered, -Y_carrier_Frequency)
 
-    # Take the real part of YsignalRecovered and select the first half
-    
     i = comp[I_beginning_Frequency:Q_beginning_Frequency-1]
 
-    # Pad the array with zeros
+    # Pad the arrays
     i_recov = np.pad(i, (I_beginning_Frequency, 0), mode='constant', constant_values=0)
     i_recov_2 = np.pad(i_recov, (0, max_Frequency-Q_beginning_Frequency), mode='constant', constant_values=0)
+    
     # Circular shift the signal
     IsignalRecovered = np.roll(i_recov_2, -I_carrier_Frequency)
     
      
     q = comp[Q_beginning_Frequency:max_Frequency]
 
-    # Pad the array with zeros
+    # Pad the array
     q = np.pad(q, (Q_beginning_Frequency-1, 0), mode='constant', constant_values=0)
 
     # Circular shift the signal
@@ -502,40 +511,29 @@ def demodulate(comp):
     return YsignalRecovered, IsignalRecovered, qQsignalRecovered
 
     
-    #YsignalRecovered_real = np.real(YsignalRecovered[:numrows*numcols//2])
-    
 def recov_yiq_img(y, i, q):
     
     y_image = np.reshape(y[:1080*1920], (1080, 1920))
+    plt.figure(0)
     plt.imshow(np.abs(y_image), cmap='gray')
+    y_image = np.abs(y_image)
+    
+    
+    plt.figure(1)
+    i_image = np.reshape(i[:1080*1920], (1080, 1920))
+    plt.imshow(np.abs(i_image), cmap='gray')
+    i_image = np.abs(i_image)
+    
+    plt.figure(2)
+    q_image = np.reshape(q[:1080*1920], (1080, 1920))
+    plt.imshow(np.abs(q_image), cmap='gray')
+    q_image = np.abs(q_image)
+
+    
     plt.show()
     
 
-    
-    '''
-   # Assuming 'freq_signal' is your 1D frequency domain signal
-
-    # Step 1: Convert the 1D frequency domain signal to spatial domain
-    y_image = np.fft.ifft(y).real
-
-    y_image = np.reshape(y_image[:1080*1920], (1080, 1920))
-
-    # Step 4: Display the image using cv2.imshow()
-    cv2.imshow('Y Component Image', y_image)
-    
-    # Step 1: Convert the 1D frequency domain signal to spatial domain
-    i_image = np.fft.ifft(i).real
-
-    i_image = np.reshape(i_image[:1080*1920], (1080, 1920))
-
-    # Step 4: Display the image using cv2.imshow()
-    cv2.imshow('I Component Image', i_image)
-    
-     # Step 1: Convert the 1D frequency domain signal to spatial domain
-    q_image = np.fft.ifft(q).real
-
-    '''
-    return y_image, i_image, q_image
+    #return y_image, i_image, q_image
     
 
     
@@ -548,51 +546,79 @@ def recov_yiq():
         y_1D = np.fft.ifft(y_recov)
         i_1D = np.fft.ifft(i_recov)
         q_1D = np.fft.ifft(q_recov)
-        y_1D = y_1D[:1080*1920]
-        y, i, q = recov_yiq_img(y_1D, i_1D, q_1D)
-        #r, g, b = recov_yiq_rgb(y, i, q)
-        #recov_rgb_spatial(r, g, b)
+        #recov_yiq_img(y_1D, i_1D, q_1D)
+        y_image = np.abs(np.reshape(y_1D[:1080*1920], (1080, 1920)))
+        i_image = np.abs(np.reshape(i_1D[:1080*1920], (1080, 1920)))
+        q_image = np.abs(np.reshape(q_1D[:1080*1920], (1080, 1920)))
+        r,g,b = recov_yiq_rgb(y_image, i_image, q_image)
+        #recov_rgb_spatial(r,g,b)
+        display_rgb_freq(r, g, b)
         
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        # Wait for a key press.
+        key = cv2.waitKey(0)
+        
+        if key == ord('0'):
+            # Destroy all figures
+            plt.close('all')
+        elif key == ord('q'):
+            break
     
     
     
     
 def recov_yiq_rgb(y, i, q):
     
-    r = 1.0*y+0.956*i+0.620*q
+    r = 1.0*y + 0.956*i + 0.620*q
     g = 1.0*y-0.272*i-0.647*q
-    b =1.0*y-1.108*i + 1.700*q
+    b = 1.0*y-1.108*i+ 1.700*q
+
+
     
     return r, g, b
 
-def recov_rgb_spatial(r,g, b):
+def recov_rgb_spatial(r, g, b):
      # We will now represent each frame in R G B image form
         # Display the R, G, and B frames.
         
-        cv2.imshow("R", r)
-        cv2.imshow("G", g)
-        cv2.imshow("B", b)
+        plt.figure(0)
+        plt.imshow(r, cmap='gray')
         
-        rgb_image = cv2.merge((r, g, b))
-        cv2.imshow("image", rgb_image)
-        return
+        plt.figure(1)
+        plt.imshow(g, cmap='gray')
+        
+        plt.figure(2)
+        plt.imshow(b, cmap='gray')
+        
+      
+        #image = np.zeros((1080, 1920, 3), dtype=np.uint8)
+        #image[:, :, 0] = (r)
+        #image[:, :, 1] = (g)
+        #image[:, :, 2] = (b)
+        
+       #plt.figure(3)
+        #plt.imshow(image)
+#       
+        
+        #plt.show()
+        #cv2.imshow("image", rgb)  
+        #return
     
         Rs, Gs, Bs = rgb_spatial(r, g, b)
         
         # Plot the result in spatial domain
-        plt.figure(0)
+        plt.figure(4)
         plt.plot(Rs)
         plt.title('R original in Spatial Domain')
 
         # Plot the result in spatial domain
-        plt.figure(1)
+        plt.figure(5)
         plt.plot(Gs)
         plt.title('G original in Spatial Domain')
         
         # Plot the result in spatial domain
-        plt.figure(2)
+        plt.figure(6)
         plt.plot(Bs)
         plt.title('B original in Spatial Domain')
+        
+        plt.show()
         
