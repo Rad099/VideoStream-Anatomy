@@ -21,8 +21,7 @@ plt.rcParams['agg.path.chunksize'] = 1000
 
 
 composite_frames = []
-rec_yiq_frames = []
-rec_rgb_frames = []
+
 
 
 ##### GLOBAL VARIABLES #####
@@ -41,23 +40,6 @@ def get_video(input):
      
 def conv_to_yiq(input):
     
-    r, g, b = cv2.split(input)
-
-    # Normalize to the range [0, 1]
-    #r = r / 255.0
-    #g = g / 255.0
-    #b = b / 255.0
-
-    # Convert to float64 for precision
-    #r = r.astype(np.float64)
-    #g = g.astype(np.float64)
-    #b = b.astype(np.float64)
-
-    # RGB to YIQ conversion
-    #y = 0.299*r + 0.587*g + 0.114*b
-    #i = 0.596*r - 0.275*g - 0.321*b
-    #q = 0.212*r - 0.523*g - 0.311*b
-    
     yiq = cv2.cvtColor(input, cv2.COLOR_BGR2YCrCb)
     y, i, q = cv2.split(yiq)
         
@@ -66,6 +48,7 @@ def conv_to_yiq(input):
 
 def display_yiq(y, i, q):
     # We will now represent each frame in R G B image form
+    
         # Display the R, G, and B frames.
         cv2.imshow("Y", y)
         cv2.imshow("I", i)
@@ -371,19 +354,10 @@ def composite_signal(input):
         
         y, i, q = conv_to_yiq(frame)
         composite_image = process_yiq(y, i, q)
-        composite_frames.append(composite_image)
-        if j == 2:
+        composite_frames.append(composite_image) # needed for recovery functions to work, so no need to read video again
+        if j == 2: # only does 2 frames. If more needed, increase j
             return
 
-        
-    
-    #user = input("if you want to see the spatial or frequency domains of the composite signals, press c. To continue, press q")
-    #if user == 'q':
-    
-        '''
-        # Check if the frame was read successfully.
-        if not ret:
-            break
         
         y,i,q = conv_to_yiq(frame)
       
@@ -410,10 +384,8 @@ def composite_signal(input):
     # Destroy the windows.
     cv2.destroyAllWindows()
     
-    '''
     
-    
-    
+
 def composite_spatial(input):
     # Plot the result in spatial domain
     plt.figure(0)
@@ -546,6 +518,7 @@ def recov_yiq():
         y_1D = np.fft.ifft(y_recov)
         i_1D = np.fft.ifft(i_recov)
         q_1D = np.fft.ifft(q_recov)
+        
         #recov_yiq_img(y_1D, i_1D, q_1D)
         y_image = np.abs(np.reshape(y_1D[:1080*1920], (1080, 1920)))
         i_image = np.abs(np.reshape(i_1D[:1080*1920], (1080, 1920)))
@@ -590,17 +563,16 @@ def recov_rgb_spatial(r, g, b):
         plt.imshow(b, cmap='gray')
         
       
-        #image = np.zeros((1080, 1920, 3), dtype=np.uint8)
-        #image[:, :, 0] = (r)
-        #image[:, :, 1] = (g)
-        #image[:, :, 2] = (b)
+        image = np.zeros((1080, 1920, 3), dtype=np.uint8)
+        image[:, :, 0] = (r)
+        image[:, :, 1] = (g)
+        image[:, :, 2] = (b)
         
-       #plt.figure(3)
+        #plt.figure(3)
         #plt.imshow(image)
 #       
         
         #plt.show()
-        #cv2.imshow("image", rgb)  
         #return
     
         Rs, Gs, Bs = rgb_spatial(r, g, b)
